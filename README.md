@@ -56,7 +56,6 @@ events.json + videos/
   │  PART 3 — Cross-Video Claim Consolidation            │
   │  Qwen3-Embedding-8B + greedy single-link clustering  │
   │  Qwen3-30B per-cluster LLM verify + canonicalise     │
-  │  → submission/penkil_method_a.jsonl  (MAGMaR final)  │
   └──────────────────────────────────────────────────────┘
 ```
 
@@ -86,8 +85,6 @@ pip install -r requirements-aggregator.txt
 ```
 
 Then prepare data ([📦 Datasets](#-datasets)) and run the pipeline ([🏃 Running TRACE](#-running-trace)).
-
-If you don't have a GPU handy yet, you can still verify the wiring with the **no-GPU dry smoke** ([Hardware recipes](#hardware-recipes)).
 
 ---
 
