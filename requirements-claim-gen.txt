@@ -1,0 +1,14 @@
+# Heavy dependencies for Part 2 (claim generation) only.
+# Install on top of requirements.txt when you want to run the Qwen3-30B LLM
+# and Qwen3-VL-30B LVLM stages:
+#
+#     pip install -r requirements.txt
+#     pip install -r requirements-claim-gen.txt
+#
+# These are NOT needed for Part 1 (audio + frames + ASR + YOLO + OCR + merge).
+
+vllm>=0.6.3              # high-throughput LLM/LVLM inference; main backend
+av>=12.0                 # PyAV — video frame extraction for the LVLM
+qwen-vl-utils>=0.0.10    # only needed when running with --no-vllm
+bitsandbytes>=0.43       # 4-bit/8-bit quantisation for the HF backend fallback
+tqdm>=4.66

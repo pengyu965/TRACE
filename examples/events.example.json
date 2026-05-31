@@ -1,0 +1,18 @@
+{
+  "events": [
+    {
+      "event_key": "russia_ukraine_war",
+      "query": "Tell me about the 2022 Russian invasion of Ukraine and its aftermath.",
+      "persona_title": "International Affairs Reporter",
+      "background": "I cover geopolitical conflicts for a major newspaper and need detailed factual reports on military and diplomatic developments.",
+      "videos": ["video_id_one", "video_id_two"]
+    },
+    {
+      "event_key": "fifa_world_cup_2022_final",
+      "query": "What happened in the 2022 FIFA World Cup final between Argentina and France?",
+      "persona_title": "Sports Statistician",
+      "background": "I compile detailed match statistics for football analytics platforms.",
+      "videos": ["video_id_three"]
+    }
+  ]
+}

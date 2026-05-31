@@ -1,0 +1,19 @@
+# Core
+torch>=2.1
+transformers>=4.46
+accelerate>=0.34
+Pillow>=10.0
+opencv-python>=4.8
+numpy>=1.26
+
+# YOLO
+ultralytics>=8.3
+
+# ASR
+faster-whisper>=1.0
+ctranslate2>=4.4
+
+# HunyuanOCR ships through HF transformers; no extra package required.
+
+# ffmpeg is a SYSTEM binary, install via apt/brew:
+#   apt-get install -y ffmpeg

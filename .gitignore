@@ -1,0 +1,32 @@
+# Outputs
+out/
+output/
+*.log
+*.jsonl
+*.tar
+*.tar.gz
+
+# Models (downloaded automatically)
+*.pt
+*.bin
+*.safetensors
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Per-user input
+events.json
+events.local.json
+
+# But always keep the example input
+!examples/events.example.json
