@@ -12,15 +12,8 @@
 [Paper (coming soon)](#) · [Submission file](#-evaluation) · [Hugging Face dataset (to be released)](#-datasets)
 <!-- TODO(authors): once arXiv ID is assigned, swap the "Paper (coming soon)" link. -->
 
-<!-- TODO(authors): drop the pipeline overview figure here.
-     Recommended: `figures/trace_pipeline_overview.png`. Suggested caption:
-     "Figure 1: TRACE — grounding-before-reasoning pipeline. Object detection
-     and OCR build a text-searchable timeline; a text-only LLM localises
-     query-relevant frames; an LVLM generates citation-backed claims; an
-     embedding clustering + per-cluster verifier consolidates across videos."
--->
 <p align="center">
-  <em>[ Pipeline overview figure — to be added: see <code>figures/trace_pipeline_overview.png</code> ]</em>
+  <img src="figures/framework.png" alt="TRACE pipeline overview" width="92%"/>
 </p>
 
 ---
