@@ -1,16 +1,12 @@
 # 🎯 TRACE: Evidence Grounding-Guided Multi-Video Event Understanding and Claim Generation [ACL 2026 MAGMaR]
 
-<!-- TODO(authors): confirm the author list, ordering, links, and affiliations
-     before pushing. The draft below mirrors the paper PDF — adjust as needed. -->
-
 [Pengyu Yan*](https://scholar.google.com/citations?user=q2QMx5gAAAAJ&hl=en)<sup>1</sup>, [Akhil Gorugantu*](https://scholar.google.com/citations?user=ust_T20AAAAJ&hl=en)<sup>1</sup>, [Mahesh Bhosale](https://bhosalems.github.io/)<sup>1</sup>, [Abdul Wasi](https://scholar.google.com/citations?user=_2friTYAAAAJ&hl=en)<sup>1</sup>, [Vishvesh Trivedi](https://github.com/NerdyVisky)<sup>2</sup>, [David Doermann](https://scholar.google.com/citations?user=RoGOW9AAAAAJ&hl=en)<sup>1</sup>.
 
 <sup>1</sup>**University at Buffalo**  |  <sup>2</sup>**New York University**
 
-<sup>\*</sup> Equal Contribution. Correspondence: pyan4@buffalo.edu  <!-- TODO(authors): confirm correspondence address -->
+<sup>\*</sup> Equal Contribution. Correspondence: pyan4@buffalo.edu
 
-[Paper (coming soon)](#) · [Submission file](#-evaluation) · [Hugging Face dataset (to be released)](#-datasets)
-<!-- TODO(authors): once arXiv ID is assigned, swap the "Paper (coming soon)" link. -->
+[Paper (arXiv)](https://arxiv.org/abs/2605.16740) · [🤗 MAGMaR dataset](https://huggingface.co/datasets/akhilvssg/TRACE-MAGMaR-2026) · [🤗 WikiVideo dataset](https://huggingface.co/datasets/akhilvssg/TRACE-WikiVideo)
 
 <p align="center">
   <img src="figures/framework.png" alt="TRACE pipeline overview" width="92%"/>
@@ -56,9 +52,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full data-flow diagra
 
 <!-- TODO(authors): qualitative-example figure (input frames, OCR/YOLO overlays,
      guidance summary, generated claims). Suggested: `figures/qualitative_example.png`. -->
-<p align="center">
-  <em>[ Qualitative example figure — to be added ]</em>
-</p>
+
 
 ---
 
@@ -83,7 +77,40 @@ Then prepare data ([📦 Datasets](#-datasets)) and run the pipeline ([🏃 Runn
 
 ## 📦 Datasets
 
-**Datasets to be released soon.** We are bundling our pre-computed Part-1 artefacts (frame extracts, ASR caches, YOLO + HunyuanOCR outputs, merged timelines) for both MAGMaR-2026 and the WikiVideo train set into a single Hugging Face release. Once the bundle goes public the download link will appear here.
+We release two companion datasets on the Hugging Face Hub that ship **every artefact produced by the TRACE pipeline** — official inputs, Part-1 preprocessing outputs (ASR + OCR + object detection), Part-2 LVLM claim files, Part-3 aggregation traces, and the final submission JSONLs. Both releases are AGPL-3.0 and mirror the same folder shape, so anything you learn from one transfers directly to the other.
+
+### MAGMaR-2026 — [🤗 `akhilvssg/TRACE-MAGMaR-2026`](https://huggingface.co/datasets/akhilvssg/TRACE-MAGMaR-2026)
+
+Companion artefacts for the **MAGMaR 2026 Oracle Track test set** — the configuration that produces our paper's headline number (Avg MiRAGE F1 = 0.811). Ships both frame-selection variants (`uniform/` ↔ Additional Key Frames ✗, `guided/` ↔ Additional Key Frames ✓) and both Stage-3 methods (`stage3_io/embed_sim/` ↔ Method A, `stage3_io/llm/` ↔ Method B). Includes 90 mp4s packed in `videos.tar` (3.8 GB) and `frames_annotated.tar.gz` (5.4 GB) of YOLO + OCR overlay JPGs, so the pipeline can be reproduced from the release alone.
+
+```bash
+hf download akhilvssg/TRACE-MAGMaR-2026 --repo-type dataset \
+    --local-dir ./data/TRACE-MAGMaR-2026
+
+# unpack the bundled videos + annotated frames
+cd data/TRACE-MAGMaR-2026
+tar  -xf videos.tar                    # → videos/<video_id>.mp4
+tar -xzf frames_annotated.tar.gz       # → frames_annotated/{yolo,ocr}/...
+```
+
+The headline paper result lives at
+[`part3_aggregation/guided/submission/penkil_v2_method_a.jsonl`](https://huggingface.co/datasets/akhilvssg/TRACE-MAGMaR-2026/blob/main/part3_aggregation/guided/submission/penkil_v2_method_a.jsonl).
+
+### WikiVideo (MAGMaR-style) — [🤗 `akhilvssg/TRACE-WikiVideo`](https://huggingface.co/datasets/akhilvssg/TRACE-WikiVideo)
+
+A **52-query WikiVideo evaluation set** built specifically for TRACE, converted to the MAGMaR input format so the **exact same pipeline** runs end-to-end on WikiVideo. We start from 56 WikiVideo events, drop the 4 that overlap the MAGMaR 2026 test set, then have an LLM agent generate a `<persona_title, background, query>` triplet per event in the MAGMaR persona-query format. Each generated triplet is scored on a 5-point scale across four axes — `persona_grounding`, `query_answerability`, `article_angle_alignment`, `overall_grounding` — flagged triplets are rewritten and re-scored, and only events with `overall_grounding ≥ 4` survive. The complete audit trail (per-event scores + free-text reasoning) ships under [`inputs/audit/`](https://huggingface.co/datasets/akhilvssg/TRACE-WikiVideo/tree/main/inputs/audit) for full transparency.
+
+Only the `uniform/` variant is shipped (matching the paper's WikiVideo configuration). The raw `.mp4` files are **not** redistributed — download them from the upstream [🤗 `hltcoe/wikivideo`](https://huggingface.co/datasets/hltcoe/wikivideo) release at `data/full/videos/en/`. All `video_id`s match upstream verbatim.
+
+```bash
+# our MAGMaR-style queries + Part-1/2/3 artefacts
+hf download akhilvssg/TRACE-WikiVideo --repo-type dataset \
+    --local-dir ./data/TRACE-WikiVideo
+
+# upstream videos (used as-is, no re-encoding)
+hf download hltcoe/wikivideo --repo-type dataset \
+    --local-dir ./data/wikivideo
+```
 
 ### Input format
 
@@ -106,7 +133,7 @@ You supply one JSON file describing the events you want to process, plus a direc
 
 `persona_title`, `background`, and `language` are **optional** (used only by Part-2 prompts). The pipeline resolves `<videos-dir>/<video_id>.{mp4,mkv,webm,mov,m4v}` (first match wins). See [`examples/events.example.json`](examples/events.example.json) for a worked example.
 
-Once the dataset release is live, the prepared events file plus the pre-cached intermediate artefacts will let you skip Part 1 entirely and jump straight to Part 2 / Part 3.
+The two HF releases let you skip Part 1 entirely: their `part1_preprocessing/{yolo,ocr,asr_whisper}.jsonl` files are drop-in replacements for the merged-timeline outputs the pipeline would compute locally, so you can jump straight to Part 2 / Part 3.
 
 ### Data files
 
@@ -356,15 +383,13 @@ Table 4 in the paper. Embedding-based aggregation (Method A) and guided keyframe
 
 ## Citation
 
-<!-- TODO(authors): confirm final BibTeX once the proceedings citation form
-     is published (arXiv ID, ACL Anthology ID, exact booktitle). -->
-
 ```bibtex
 @inproceedings{yan2026trace,
   title     = {TRACE: Evidence Grounding-Guided Multi-Video Event Understanding and Claim Generation},
   author    = {Yan, Pengyu and Gorugantu, Akhil and Bhosale, Mahesh and Wasi, Abdul and Trivedi, Vishvesh and Doermann, David},
   booktitle = {Proceedings of the MAGMaR Workshop at ACL 2026},
   year      = {2026},
+  url       = {https://arxiv.org/abs/2605.16740},
   note      = {Equal contribution: Pengyu Yan and Akhil Gorugantu}
 }
 ```
