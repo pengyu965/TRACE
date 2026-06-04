@@ -1,5 +1,5 @@
 # Core
-torch>=2.1
+torch==2.10
 transformers>=4.46
 accelerate>=0.34
 Pillow>=10.0
@@ -13,7 +13,17 @@ ultralytics>=8.3
 faster-whisper>=1.0
 ctranslate2>=4.4
 
-# HunyuanOCR ships through HF transformers; no extra package required.
 
-# ffmpeg is a SYSTEM binary, install via apt/brew:
-#   apt-get install -y ffmpeg
+
+# For claim generation
+vllm>=0.6.3              # high-throughput LLM/LVLM inference; main backend
+av>=12.0                 # PyAV — video frame extraction for the LVLM
+qwen-vl-utils>=0.0.10    # only needed when running with --no-vllm
+bitsandbytes>=0.43       # 4-bit/8-bit quantisation for the HF backend fallback
+tqdm>=4.66
+
+xgrammar>=0.1.18         # constrained JSON output for the aggregator LLM
+
+# Transformers: pin to the dev commit used during development
+# (equivalent released version: transformers==4.57.6)
+git+https://github.com/huggingface/transformers@82a06db03535c49aa987719ed0746a76093b1ec4

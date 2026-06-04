@@ -26,7 +26,30 @@ def load_events(input_path: str) -> list[dict]:
     Returns a list of dicts with keys event_key, slug, query, videos,
     persona_title, background, language.
     """
-    data = json.load(open(input_path))
+    p = Path(input_path)
+    if p.suffix == ".jsonl":
+        with open(p) as f:
+            events_list = [json.loads(line) for line in f if line.strip()]
+        # MAGMaR JSONL: 'title' is per-topic (not unique); 'query_id' is unique per query.
+        # Combine them so the slug is both meaningful and collision-free.
+        for ev in events_list:
+            if "event_key" not in ev:
+                title    = ev.get("title", "")
+                query_id = ev.get("query_id", "")
+                ev["event_key"] = f"{title}_{query_id}" if title and query_id else (title or query_id)
+        # Load companion video mapping if present and any event is missing 'videos'.
+        # Videos are keyed by 'title' in topic_video_mapping.json, not by event_key.
+        if any("videos" not in ev for ev in events_list):
+            mapping_path = p.parent / "topic_video_mapping.json"
+            if mapping_path.exists():
+                video_map = json.loads(mapping_path.read_text())
+                for ev in events_list:
+                    if "videos" not in ev:
+                        ev["videos"] = video_map.get(ev.get("title", ev["event_key"]), [])
+        data = {"events": events_list}
+    else:
+        with open(p) as f:
+            data = json.load(f)
     if "events" not in data or not isinstance(data["events"], list):
         raise ValueError(f"{input_path}: expected a top-level 'events' list")
     out = []
