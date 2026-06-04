@@ -8,51 +8,15 @@
 
 [Paper (arXiv)](https://arxiv.org/abs/2605.16740) · [🤗 MAGMaR dataset](https://huggingface.co/datasets/akhilvssg/TRACE-MAGMaR-2026) · [🤗 WikiVideo dataset](https://huggingface.co/datasets/akhilvssg/TRACE-WikiVideo)
 
-<p align="center">
-  <img src="figures/framework.png" alt="TRACE pipeline overview" width="92%"/>
-</p>
-
 ---
 
 ## Overview
 
-**TRACE** is an evidence grounding-guided framework for multi-video event understanding that follows a **ground-before-reasoning** strategy. We first build a structured, text-searchable timeline for each video using object detection (YOLOv12) and OCR (HunyuanOCR). A text-only LLM (Qwen3-30B-A3B-Instruct) performs **query-aware evidence localization**, selecting evidentially relevant frames before any visual reasoning. The retrieved frames and their grounding summaries then steer an LVLM (Qwen3-VL-30B-A3B-Instruct) for claim generation, followed by cross-video citation consolidation through embedding-based clustering and per-cluster LLM verification.
+<p align="center">
+  <img src="figures/framework.png" alt="TRACE pipeline overview" width="92%"/>
+</p>
 
-We achieve **state-of-the-art results on the MAGMaR 2026 leaderboard**, with macro-average MiRAGE F1 rising from **0.705 → 0.811** (+0.106) versus the strongest unguided Qwen3-VL-30B baseline on the MAGMaR validation split, and a **+42.7% relative gain in citation recall** (0.440 → 0.628). The same pipeline generalises to WikiVideo without modification (Avg F1 0.854 → 0.879).
-
-<!-- TODO(authors): replace the ASCII sketch below with a rendered figure.
-     The ASCII version is kept as a fallback so the README still reads on
-     plain-text viewers. Suggested: `figures/trace_pipeline_parts.png`. -->
-
-```
-events.json + videos/
-     │
-     ▼
-  ┌──────────────────────────────────────────────────────┐
-  │  PART 1 — Structured Grounding                       │
-  │  YOLOv12 + HunyuanOCR + Whisper large-v3             │
-  │  → merged.jsonl (frame-level OCR + objects + ASR)    │
-  └──────────────────────────────────────────────────────┘
-                      ▼
-  ┌──────────────────────────────────────────────────────┐
-  │  PART 2 — Grounding-Guided Claim Generation          │
-  │  Qwen3-30B (relevance filter, text-only)             │
-  │  Qwen3-VL-30B (hybrid uniform + guided keyframes)    │
-  │  → claim_results/<video>_results.json                │
-  └──────────────────────────────────────────────────────┘
-                      ▼
-  ┌──────────────────────────────────────────────────────┐
-  │  PART 3 — Cross-Video Claim Consolidation            │
-  │  Qwen3-Embedding-8B + greedy single-link clustering  │
-  │  Qwen3-30B per-cluster LLM verify + canonicalise     │
-  └──────────────────────────────────────────────────────┘
-```
-
-See [`docs/architecture.md`](docs/architecture.md) for the full data-flow diagram with resumability semantics, and [`docs/schemas.md`](docs/schemas.md) for every intermediate JSON shape.
-
-<!-- TODO(authors): qualitative-example figure (input frames, OCR/YOLO overlays,
-     guidance summary, generated claims). Suggested: `figures/qualitative_example.png`. -->
-
+Multi-video event understanding demands models that can locate and attribute query-relevant evidence scattered across long, heterogeneous video corpora. Existing large vision–language models (LVLMs) often underperform in this regime because they quickly exhaust their context budget and struggle to precisely localize evidentially important segments, frequently missing dense informational cues such as broadcast graphics, subtitles, and scoreboards. We introduce **TRACE**, an evidence grounding guided framework that follows a **ground-before-reasoning** strategy for multi-video event reasoning. Our approach first builds a structured, text-searchable timeline for each video using OCR and object detection. A text-only LLM then conducts query-aware evidence localization, selecting relevant moments prior to any downstream visual reasoning. The retrieved frames and their grounding summaries are subsequently used to steer LVLM-based claim generation and cross-video citation consolidation. Experiments on MAGMaR 2026 and WikiVideo demonstrate that structured grounding markedly boosts factual completeness and attribution fidelity. On the MAGMaR validation split, TRACE raises macro-average **MiRAGE F1 from 0.705 to 0.811** compared to an unguided Qwen3-VL-30B baseline, with especially strong improvements in **citation recall (0.440 → 0.628)**. The method also attains **state-of-the-art** results on the official MAGMaR 2026 leaderboard.
 
 ---
 
@@ -70,8 +34,6 @@ sudo apt-get install -y ffmpeg
 > Install it by `pip install git+https://github.com/huggingface/transformers@82a06db03535c49aa987719ed0746a76093b1ec4` (This is already included in requirement.txt but in case you need it separately.)
 
 Then prepare data ([📦 Datasets](#-datasets)) and run the pipeline ([🏃 Running TRACE](#-running-trace)).
-
----
 
 ## 📦 Datasets
 
@@ -134,25 +96,37 @@ You supply one JSON file describing the events you want to process, plus a direc
 The two HF releases let you skip Part 1 entirely: their `part1_preprocessing/{yolo,ocr,asr_whisper}.jsonl` files are drop-in replacements for the merged-timeline outputs the pipeline would compute locally, so you can jump straight to Part 2 / Part 3.
 
 
+---
+
 ## 🏃 Running TRACE
 
-### End-to-end (all three parts)
-
-```bash
-python -m pipeline.run \
-    --input        ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  \
-    --videos-dir   /path/to/videos \
-    --output-dir   out/ \
-    --gpus         0,1,2,3 \
-    --aggregator-tensor-parallel 4
+Overall, TRACE has three parts showing as follows.
 ```
-
-Or via the bash wrapper (handles conda activation, tmux-friendly, supports `PART={all,1,2,3,12,23}` subsets):
-
-```bash
-INPUT=./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  VIDEOS=/path/to/videos OUT=out/ \
-GPUS=0,1,2,3 AGG_TP=4 \
-    bash scripts/run_pipeline.sh
+events.json + videos/
+     │
+     ▼
+  ┌──────────────────────────────────────────────────────┐
+  │  PART 1 — Structured Grounding                       │
+  │  YOLOv12 + HunyuanOCR + Whisper large-v3             │
+  │  → merged.jsonl (frame-level OCR + objects + ASR)    │
+  └──────────────────────────────────────────────────────┘
+                      ▼
+  ┌──────────────────────────────────────────────────────┐
+  │  PART 2 — Grounding-Guided Claim Generation          │
+  │     Step 1: Query-Conditioned Evidence Localization. │
+  │         (Query+Persona <--> detection and OCR result)│
+  │         (Qwen3-30B-A3B-Instruct)                     │
+  │      Step 2: Grounding-Guided Claim Generation       │
+  │        (uniform + keyframes, Guided Evidence, ASR)   │
+  │        (Qwen3-VL-30B-A3B-Instruct)                   │
+  │  → claim_results/<video>_results.json                │
+  └──────────────────────────────────────────────────────┘
+                      ▼
+  ┌──────────────────────────────────────────────────────┐
+  │  PART 3 — Cross-Video Claim Consolidation            │
+  │  Qwen3-Embedding-8B + greedy single-link clustering  │
+  │  Qwen3-30B per-cluster LLM verify + canonicalise     │
+  └──────────────────────────────────────────────────────┘
 ```
 
 ### Part 1 only — Structured Grounding
