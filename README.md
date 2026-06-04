@@ -59,17 +59,15 @@ See [`docs/architecture.md`](docs/architecture.md) for the full data-flow diagra
 ## 🚀 Quick Start
 
 ```bash
-git clone <this repo>.git && cd magmar-video-pipeline
-conda create -n trace python=3.10 -y && conda activate trace
-
-# Part 1 deps (always required)
+git clone https://github.com/pengyu965/TRACE.git && cd TRACE
+conda create -n trace python=3.13 -y && conda activate trace
 pip install -r requirements.txt
 sudo apt-get install -y ffmpeg
-
-# Parts 2 + 3 deps (when you want to run the heavy LLM stages)
-pip install -r requirements-claim-gen.txt
-pip install -r requirements-aggregator.txt
 ```
+
+> **Note — HunyuanOCR requires a specific `transformers` build.**
+> The OCR model (`tencent/HunyuanOCR`) uses the `hunyuan_vl` architecture, which is absent from standard PyPI releases of `transformers`.
+> Install it by `pip install git+https://github.com/huggingface/transformers@82a06db03535c49aa987719ed0746a76093b1ec4` (This is already included in requirement.txt but in case you need it separately.)
 
 Then prepare data ([📦 Datasets](#-datasets)) and run the pipeline ([🏃 Running TRACE](#-running-trace)).
 
@@ -135,16 +133,6 @@ You supply one JSON file describing the events you want to process, plus a direc
 
 The two HF releases let you skip Part 1 entirely: their `part1_preprocessing/{yolo,ocr,asr_whisper}.jsonl` files are drop-in replacements for the merged-timeline outputs the pipeline would compute locally, so you can jump straight to Part 2 / Part 3.
 
-### Data files
-
-| File | Purpose |
-|---|---|
-| `events.json` (user-supplied) | Event metadata + video manifest |
-| `out/merged.jsonl` | Per-video joined YOLO + OCR + ASR (Part 1 → Part 2 handoff) |
-| `out/claim_results/<vid>_results.json` | Per-video claims with citations (Part 2 → Part 3 handoff) |
-| `out/aggregate/submission/penkil_method_a.jsonl` | Final MAGMaR 2026 submission |
-
----
 
 ## 🏃 Running TRACE
 
@@ -152,7 +140,7 @@ The two HF releases let you skip Part 1 entirely: their `part1_preprocessing/{yo
 
 ```bash
 python -m pipeline.run \
-    --input        my_events.json \
+    --input        ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  \
     --videos-dir   /path/to/videos \
     --output-dir   out/ \
     --gpus         0,1,2,3 \
@@ -162,8 +150,7 @@ python -m pipeline.run \
 Or via the bash wrapper (handles conda activation, tmux-friendly, supports `PART={all,1,2,3,12,23}` subsets):
 
 ```bash
-tmux new -s trace
-INPUT=my_events.json VIDEOS=/path/to/videos OUT=out/ \
+INPUT=./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  VIDEOS=/path/to/videos OUT=out/ \
 GPUS=0,1,2,3 AGG_TP=4 \
     bash scripts/run_pipeline.sh
 ```
@@ -171,25 +158,25 @@ GPUS=0,1,2,3 AGG_TP=4 \
 ### Part 1 only — Structured Grounding
 
 ```bash
-PART=1 INPUT=my_events.json VIDEOS=/path/to/videos OUT=out/ GPUS=0,1 \
+PART=1 INPUT=./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  VIDEOS=/path/to/videos OUT=out/ GPUS=0,1 \
     bash scripts/run_pipeline.sh
 ```
 
 Equivalent direct invocation of the underlying modules:
 
 ```bash
-python -m pipeline.extract_audio        --input my_events.json --videos-dir videos/ --output-dir out/
-python -m pipeline.extract_frames       --input my_events.json --videos-dir videos/ --output-dir out/
-python -m pipeline.whisper_asr          --input my_events.json --output-dir out/ --gpus 0
+python -m pipeline.extract_audio        --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --videos-dir videos/ --output-dir out/
+python -m pipeline.extract_frames       --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --videos-dir videos/ --output-dir out/
+python -m pipeline.whisper_asr          --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --output-dir out/ --gpus 0
 python -m pipeline.yolo_batch           --output-dir out/ --gpus 0,1
 python -m pipeline.hunyuan_ocr_batch    --output-dir out/ --gpus 0,1
-python -m pipeline.merge                --input my_events.json --output-dir out/
+python -m pipeline.merge                --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --output-dir out/
 ```
 
 ### Part 2 only — Claim Generation
 
 ```bash
-PART=2 INPUT=my_events.json VIDEOS=/path/to/videos OUT=out/ GPUS=0,1,2,3 \
+PART=2 INPUT=./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  VIDEOS=/path/to/videos OUT=out/ GPUS=0,1,2,3 \
     bash scripts/run_pipeline.sh
 ```
 
@@ -197,7 +184,7 @@ Or:
 
 ```bash
 python -m pipeline.claim_gen.run_claim_gen \
-    --input my_events.json --videos-dir videos/ --output-dir out/ \
+    --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --videos-dir videos/ --output-dir out/ \
     --gpus 0,1,2,3 --frame-mode guided
 ```
 
@@ -206,7 +193,7 @@ python -m pipeline.claim_gen.run_claim_gen \
 ### Part 3 only — Cross-Video Consolidation
 
 ```bash
-PART=3 INPUT=my_events.json VIDEOS=/path/to/videos OUT=out/ AGG_TP=4 \
+PART=3 INPUT=./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  VIDEOS=/path/to/videos OUT=out/ AGG_TP=4 \
     bash scripts/run_pipeline.sh
 ```
 
@@ -214,7 +201,7 @@ Or:
 
 ```bash
 python -m pipeline.aggregator.run_aggregate \
-    --input my_events.json --output-dir out/ --tensor-parallel 4
+    --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --output-dir out/ --tensor-parallel 4
 ```
 
 Method A (embedding-similarity clustering + per-cluster LLM verify) runs by default — this is the headline configuration from the paper. Add `AGG_METHOD_B=1` (env var) or `--aggregator-run-method-b` (CLI) to also run Method B (pure-LLM clustering) as an ablation; per Table 4 in the paper, Method B trails Method A by ~0.006 Avg F1.
@@ -247,7 +234,7 @@ The MAGMaR paper experiments used **4× RTX 6000 Ada (192 GB total)**. For other
 
 ```bash
 python -m pipeline.run \
-    --input my_events.json --videos-dir videos/ --output-dir out/ \
+    --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --videos-dir videos/ --output-dir out/ \
     --gpus 0 --claim-gpus 0 \
     --aggregator-tensor-parallel 1
 ```
@@ -257,7 +244,7 @@ Everything runs on one GPU with vLLM tp=1.
 
 ```bash
 python -m pipeline.run \
-    --input my_events.json --videos-dir videos/ --output-dir out/ \
+    --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --videos-dir videos/ --output-dir out/ \
     --gpus 0,1,2,3 --claim-gpus 0,1,2,3 \
     --aggregator-tensor-parallel 4
 ```
@@ -267,7 +254,7 @@ All defaults work; both 30B models distribute via tp=4. Matches the configuratio
 
 ```bash
 python -m pipeline.run \
-    --input my_events.json --videos-dir videos/ --output-dir out/ \
+    --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --videos-dir videos/ --output-dir out/ \
     --gpus 0,1,2,3 --claim-gpus 0,1,2,3 \
     --aggregator-tensor-parallel 4 \
     --frame-mode uniform
@@ -283,7 +270,7 @@ python -m pipeline.run \
 
 ```bash
 python scripts/dry_smoke.py \
-    --input my_events.json --output-dir out/
+    --input ./data/TRACE-MAGMaR-2026/inputs/MAGMaR2026_queries.jsonl  --output-dir out/
 ```
 
 Runs in ~3 seconds. Skips every model call but exercises every other code path (file I/O, schemas, stage 1, stage 4 validator, stage 5 diff report). Produces a real `aggregate/submission/penkil_method_a.jsonl` with synthesised claim text. Useful for CI and for sanity-checking the wiring before committing to a real GPU run.
