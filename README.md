@@ -1,4 +1,4 @@
-# 🎯 TRACE: Evidence Grounding-Guided Multi-Video Event Understanding and Claim Generation [ACL 2026 MAGMaR]
+# 🎯 TRACE: Evidence Grounding-Guided Multi-Video Event Understanding and Claim Generation [ACL 2026 Workshop]
 
 [Pengyu Yan*](https://scholar.google.com/citations?user=q2QMx5gAAAAJ&hl=en)<sup>1</sup>, [Akhil Gorugantu*](https://scholar.google.com/citations?user=ust_T20AAAAJ&hl=en)<sup>1</sup>, [Mahesh Bhosale](https://bhosalems.github.io/)<sup>1</sup>, [Abdul Wasi](https://scholar.google.com/citations?user=_2friTYAAAAJ&hl=en)<sup>1</sup>, [Vishvesh Trivedi](https://github.com/NerdyVisky)<sup>2</sup>, [David Doermann](https://scholar.google.com/citations?user=RoGOW9AAAAAJ&hl=en)<sup>1</sup>.
 
